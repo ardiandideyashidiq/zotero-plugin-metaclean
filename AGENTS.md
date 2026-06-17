@@ -2,14 +2,14 @@
 
 ## Quick commands
 
-| Command              | What it does                                                          |
-| -------------------- | --------------------------------------------------------------------- |
-| `pnpm start`         | Build dev mode, launch Zotero, watch `src/` + `addon/` for hot reload |
-| `pnpm build`         | `zotero-plugin build && tsc --noEmit` (esbuild + type-check)          |
-| `pnpm lint:check`    | `prettier --check . && eslint .`                                      |
-| `pnpm lint:fix`      | `prettier --write . && eslint . --fix`                                |
-| `pnpm test`          | `zotero-plugin test` (requires running Zotero with plugin)            |
-| `pnpm release`       | `zotero-plugin release` (bump version, tag, push → CI releases)       |
+| Command           | What it does                                                          |
+| ----------------- | --------------------------------------------------------------------- |
+| `pnpm start`      | Build dev mode, launch Zotero, watch `src/` + `addon/` for hot reload |
+| `pnpm build`      | `zotero-plugin build && tsc --noEmit` (esbuild + type-check)          |
+| `pnpm lint:check` | `prettier --check . && eslint .`                                      |
+| `pnpm lint:fix`   | `prettier --write . && eslint . --fix`                                |
+| `pnpm test`       | `zotero-plugin test` (requires running Zotero with plugin)            |
+| `pnpm release`    | `zotero-plugin release` (bump version, tag, push → CI releases)       |
 
 ## Architecture
 
