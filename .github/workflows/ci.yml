@@ -14,20 +14,30 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GitHub_TOKEN }}
     steps:
-      - name: Setup JS
-        uses: zotero-plugin-dev/workflows/setup-js@main
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - name: Run Lint
-        run: npm run lint:check
+        run: pnpm lint:check
 
   build:
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GitHub_TOKEN }}
     steps:
-      - name: Setup JS
-        uses: zotero-plugin-dev/workflows/setup-js@main
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - name: Run Build
-        run: npm run build
+        run: pnpm build
       - name: Upload build result
         uses: actions/upload-artifact@v4
         with:
@@ -39,6 +49,11 @@ jobs:
     needs:
       - build
     steps:
-      - name: Setup JS
-        uses: zotero-plugin-dev/workflows/setup-js@main
-      - run: npm run test
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
