@@ -10,8 +10,13 @@ import {
   type BatchReport,
   type FieldChange,
 } from "./itemProcessor";
-
-import { logOperation, undoLastOperation, exportLog } from "./undoLog";
+import { processItemsInBatches } from "./batchProcessor";
+import {
+  logOperation,
+  undoLastOperation,
+  exportLog,
+  exportReport,
+} from "./undoLog";
 import type { CaseMode } from "./fieldRegistry";
 
 interface MenuManagerRegisterOptions {
@@ -105,24 +110,131 @@ async function doNormalizeCollection(mode?: CaseMode): Promise<void> {
     return;
   }
 
-  const options = buildOptions(mode);
-  const report = await processCollection(collectionID, options);
+  const pw = new ztoolkit.ProgressWindow(addon.data.config.addonName)
+    .createLine({
+      text: "Loading collection items...",
+      type: "default",
+      progress: 0,
+    })
+    .show(-1);
+
+  const collection = Zotero.Collections.get(collectionID);
+  if (!collection) {
+    pw.changeLine({
+      text: "Collection not found",
+      progress: 100,
+      type: "warning",
+    });
+    return;
+  }
+
+  const itemIDs = collection.getChildItems();
+  const items: Zotero.Item[] = [];
+  for (const id of itemIDs) {
+    try {
+      const item =
+        typeof id === "number"
+          ? Zotero.Items.get(id)
+          : Zotero.Items.getByLibraryAndKey(0, String(id));
+      if (item) items.push(item);
+    } catch {
+      // skip
+    }
+  }
+
+  if (items.length === 0) {
+    pw.changeLine({
+      text: "Collection is empty",
+      progress: 100,
+      type: "warning",
+    });
+    return;
+  }
+
+  pw.changeLine({ text: `Processing 0/${items.length} items...`, progress: 0 });
+
+  const baseOpts = buildOptions(mode);
+  const report = await processItemsInBatches({
+    items,
+    batchSize: 100,
+    batchDelay: 50,
+    verbose: true,
+    onProgress: (progress) => {
+      const pct = Math.round((progress.done / progress.total) * 100);
+      pw.changeLine({
+        text: `Processing ${progress.done}/${progress.total} items (${progress.changed} changed, ${progress.errors} errors)`,
+        progress: pct,
+      });
+    },
+    ...baseOpts,
+  });
+
+  pw.win.close();
   await showCompletion(report, mode ?? "smart");
 }
 
 async function doNormalizeLibrary(mode?: CaseMode): Promise<void> {
   const libraryID = getZoteroPane().getSelectedLibraryID();
 
-  new ztoolkit.ProgressWindow(addon.data.config.addonName)
+  const pw = new ztoolkit.ProgressWindow(addon.data.config.addonName)
     .createLine({
-      text: "Processing library...",
+      text: "Searching library items...",
       type: "default",
       progress: 0,
     })
-    .show();
+    .show(-1);
 
-  const options = buildOptions(mode);
-  const report = await processLibrary(libraryID, options);
+  const s = new Zotero.Search();
+  s.addCondition("libraryID", "is", String(libraryID));
+  s.addCondition("itemType", "isNot", "attachment");
+  s.addCondition("itemType", "isNot", "note");
+
+  let ids;
+  try {
+    ids = await s.search();
+  } catch {
+    pw.changeLine({ text: "Search failed", progress: 100, type: "warning" });
+    return;
+  }
+  if (!ids || !ids.length) {
+    pw.changeLine({
+      text: "No items found in library",
+      progress: 100,
+      type: "default",
+    });
+    return;
+  }
+
+  pw.changeLine({ text: `Loading ${ids.length} items...`, progress: 0 });
+
+  const items: Zotero.Item[] = [];
+  for (const id of ids) {
+    try {
+      items.push(Zotero.Items.get(id as number));
+    } catch {
+      // skip
+    }
+  }
+
+  pw.changeLine({ text: `Processing 0/${items.length} items...`, progress: 0 });
+
+  const baseOpts = buildOptions(mode);
+  const report = await processItemsInBatches({
+    items,
+    batchSize: 100,
+    batchDelay: 50,
+    verbose: true,
+    onProgress: (progress) => {
+      const pct = Math.round((progress.done / progress.total) * 100);
+      pw.changeLine({
+        text: `Processing ${progress.done}/${progress.total} items (${progress.changed} changed, ${progress.errors} errors)`,
+        progress: pct,
+      });
+    },
+    ...baseOpts,
+  });
+
+  pw.win.close();
   await showCompletion(report, mode ?? "smart");
 }
 
@@ -233,6 +345,28 @@ function doExportLog(): void {
     new ztoolkit.ProgressWindow(addon.data.config.addonName)
       .createLine({
         text: "Failed to export log",
+        type: "warning",
+        progress: 100,
+      })
+      .show();
+  }
+}
+
+function doExportReport(): void {
+  const report = exportReport();
+  try {
+    new ztoolkit.Clipboard().addText(report, "text/unicode").copy();
+    new ztoolkit.ProgressWindow(addon.data.config.addonName)
+      .createLine({
+        text: "Normalization report copied to clipboard",
+        type: "success",
+        progress: 100,
+      })
+      .show();
+  } catch {
+    new ztoolkit.ProgressWindow(addon.data.config.addonName)
+      .createLine({
+        text: "Failed to export report",
         type: "warning",
         progress: 100,
       })
@@ -357,6 +491,12 @@ export class UIFactory {
           l10nID: `${id}-menuitem-export-log`,
           icon,
           onCommand: () => doExportLog(),
+        },
+        {
+          menuType: "menuitem",
+          l10nID: `${id}-menuitem-export-report`,
+          icon,
+          onCommand: () => doExportReport(),
         },
         { menuType: "separator" },
         {

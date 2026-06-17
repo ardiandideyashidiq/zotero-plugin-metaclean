@@ -1,4 +1,5 @@
 import type { FieldChange, BatchReport } from "./itemProcessor";
+import { getLastReport } from "./itemProcessor";
 
 export type UndoEntry = {
   timestamp: string;
@@ -115,6 +116,24 @@ export async function undoLastOperation(): Promise<{
  */
 export function exportLog(): string {
   return JSON.stringify(_operations, null, 2);
+}
+
+/**
+ * Export the last verbose normalization report as JSON string.
+ */
+export function exportReport(): string {
+  const report = getLastReport();
+  if (!report) {
+    return JSON.stringify(
+      {
+        error:
+          "No verbose report available. Run normalization with verbose mode first.",
+      },
+      null,
+      2,
+    );
+  }
+  return JSON.stringify(report, null, 2);
 }
 
 /**

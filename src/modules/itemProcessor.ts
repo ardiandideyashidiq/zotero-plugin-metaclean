@@ -12,6 +12,7 @@ export type ProcessOptions = {
   exceptions?: string[];
   processCreators?: boolean;
   creatorOptions?: Partial<CreatorOptions>;
+  verbose?: boolean;
 };
 
 export type FieldChange = {
@@ -21,13 +22,33 @@ export type FieldChange = {
   reason: string;
 };
 
+export type FieldInspection = {
+  fieldName: string;
+  group: string;
+  before?: string;
+  after?: string;
+  reason: string;
+};
+
 export type ItemProcessReport = {
   itemID: number;
   itemKey?: string;
   title?: string;
   changed: boolean;
   changes: FieldChange[];
+  fields?: FieldInspection[];
   saveError?: string;
+};
+
+export type ItemReport = {
+  itemID: number;
+  itemKey?: string;
+  title?: string;
+  changed: boolean;
+  changes: FieldChange[];
+  fields: FieldInspection[];
+  skipReason?: string;
+  error?: string;
 };
 
 export type BatchReport = {
@@ -38,6 +59,7 @@ export type BatchReport = {
   errors: number;
   errorItems: Array<{ itemID: number; error: string }>;
   changes: FieldChange[];
+  itemReports: ItemReport[];
 };
 
 // ── Regular item fields we process ───────────────────────────────
@@ -118,13 +140,24 @@ export async function processItem(
   const exceptions = options.exceptions ?? [];
 
   const changes: FieldChange[] = [];
+  const fields: FieldInspection[] = [];
 
   for (const fieldName of PROCESS_FIELDS) {
     const group = getFieldGroup(fieldName);
-    if (group === "skip") continue;
+    if (group === "skip") {
+      if (options.verbose) {
+        fields.push({ fieldName, group, reason: "skip-group" });
+      }
+      continue;
+    }
 
     // Check per-group enable pref (if not explicitly overridden)
-    if (!options.mode && !isGroupEnabled(group)) continue;
+    if (!options.mode && !isGroupEnabled(group)) {
+      if (options.verbose) {
+        fields.push({ fieldName, group, reason: "group-disabled" });
+      }
+      continue;
+    }
 
     let before: string;
 
@@ -132,10 +165,18 @@ export async function processItem(
       const val = item.getField(fieldName) as string | number | boolean | null;
       before = typeof val === "string" ? val : "";
     } catch {
+      if (options.verbose) {
+        fields.push({ fieldName, group, reason: "get-field-error" });
+      }
       continue;
     }
 
-    if (!before) continue;
+    if (!before) {
+      if (options.verbose) {
+        fields.push({ fieldName, group, reason: "empty" });
+      }
+      continue;
+    }
 
     const fieldMode = options.mode ?? getGroupMode(group);
 
@@ -145,6 +186,16 @@ export async function processItem(
       mode: fieldMode,
       exceptions,
     });
+
+    if (options.verbose) {
+      fields.push({
+        fieldName,
+        group,
+        before: result.before,
+        after: result.after,
+        reason: result.reason,
+      });
+    }
 
     if (result.changed) {
       changes.push({
@@ -176,7 +227,13 @@ export async function processItem(
         });
       }
     } catch {
-      // Skip creator errors
+      if (options.verbose) {
+        fields.push({
+          fieldName: "creators",
+          group: "creatorLike",
+          reason: "process-error",
+        });
+      }
     }
   }
 
@@ -185,6 +242,7 @@ export async function processItem(
       itemID: item.id,
       changed: false,
       changes: [],
+      fields: options.verbose ? fields : undefined,
     };
   }
 
@@ -232,6 +290,7 @@ export async function processItem(
     title,
     changed: true,
     changes,
+    fields: options.verbose ? fields : undefined,
     saveError,
   };
 }
@@ -294,6 +353,20 @@ export async function processLibrary(
   return processItems(items, options);
 }
 
+let _lastReport: BatchReport | null = null;
+
+export function getLastReport(): BatchReport | null {
+  return _lastReport;
+}
+
+export function setLastReport(report: BatchReport): void {
+  _lastReport = report;
+}
+
+export function clearLastReport(): void {
+  _lastReport = null;
+}
+
 export async function processItems(
   items: Zotero.Item[],
   options: ProcessOptions,
@@ -306,12 +379,22 @@ export async function processItems(
     errors: 0,
     errorItems: [],
     changes: [],
+    itemReports: [],
   };
 
   for (const item of items) {
     try {
       const result = await processItem(item, options);
       if (!result) {
+        if (options.verbose) {
+          report.itemReports.push({
+            itemID: item.id,
+            changed: false,
+            changes: [],
+            fields: [],
+            skipReason: "non-regular-item",
+          });
+        }
         report.skipped++;
         continue;
       }
@@ -322,13 +405,36 @@ export async function processItems(
       } else {
         report.skipped++;
       }
+      if (options.verbose) {
+        report.itemReports.push({
+          itemID: result.itemID,
+          itemKey: result.itemKey,
+          title: result.title,
+          changed: result.changed,
+          changes: result.changes,
+          fields: result.fields ?? [],
+        });
+      }
     } catch (e) {
       report.errors++;
       report.errorItems.push({
         itemID: item.id,
         error: String(e),
       });
+      if (options.verbose) {
+        report.itemReports.push({
+          itemID: item.id,
+          changed: false,
+          changes: [],
+          fields: [],
+          error: String(e),
+        });
+      }
     }
+  }
+
+  if (options.verbose) {
+    _lastReport = report;
   }
 
   return report;
@@ -343,5 +449,6 @@ function emptyBatchReport(): BatchReport {
     errors: 0,
     errorItems: [],
     changes: [],
+    itemReports: [],
   };
 }

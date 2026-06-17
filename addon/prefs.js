@@ -1,5 +1,5 @@
 pref("extensions.zotero.meta-clean.enabled", true);
-pref("extensions.zotero.meta-clean.autoProcessNewItems", false);
+pref("extensions.zotero.meta-clean.autoProcessNewItems", true);
 
 pref("extensions.zotero.meta-clean.defaultTitleMode", "sentence");
 pref("extensions.zotero.meta-clean.defaultPublicationMode", "title");

@@ -7,6 +7,7 @@ export type FluentMessageId =
   | 'menu-parent'
   | 'menuitem-collection'
   | 'menuitem-export-log'
+  | 'menuitem-export-report'
   | 'menuitem-library'
   | 'menuitem-lower'
   | 'menuitem-preview'

@@ -37,5 +37,8 @@ menuitem-undo =
 menuitem-export-log =
     .label = Export Normalization Log
 
+menuitem-export-report =
+    .label = Export Normalization Report
+
 menuitem-settings =
     .label = MetaClean Settings

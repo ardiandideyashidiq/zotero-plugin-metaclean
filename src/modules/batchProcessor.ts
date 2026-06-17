@@ -3,7 +3,7 @@ import type {
   BatchReport,
   ItemProcessReport,
 } from "./itemProcessor";
-import { processItem } from "./itemProcessor";
+import { processItem, setLastReport } from "./itemProcessor";
 
 export type BatchProgress = {
   done: number;
@@ -47,6 +47,7 @@ export async function processItemsInBatches(
     errors: 0,
     errorItems: [],
     changes: [],
+    itemReports: [],
   };
 
   let done = 0;
@@ -64,9 +65,17 @@ export async function processItemsInBatches(
 
       try {
         const result = await processItem(item, processOpts);
-        done++;
 
         if (!result) {
+          if (processOpts.verbose) {
+            report.itemReports.push({
+              itemID: item.id,
+              changed: false,
+              changes: [],
+              fields: [],
+              skipReason: "non-regular-item",
+            });
+          }
           report.skipped++;
           continue;
         }
@@ -79,12 +88,33 @@ export async function processItemsInBatches(
         } else {
           report.skipped++;
         }
+
+        if (processOpts.verbose) {
+          report.itemReports.push({
+            itemID: result.itemID,
+            itemKey: result.itemKey,
+            title: result.title,
+            changed: result.changed,
+            changes: result.changes,
+            fields: result.fields ?? [],
+          });
+        }
       } catch (e) {
         report.errors++;
         report.errorItems.push({
           itemID: item.id,
           error: String(e),
         });
+        if (processOpts.verbose) {
+          report.itemReports.push({
+            itemID: item.id,
+            changed: false,
+            changes: [],
+            fields: [],
+            error: String(e),
+          });
+        }
+      } finally {
         done++;
       }
     }
@@ -103,6 +133,10 @@ export async function processItemsInBatches(
     if (i + batchSize < items.length) {
       await Zotero.Promise.delay(batchDelay);
     }
+  }
+
+  if (processOpts.verbose) {
+    setLastReport(report);
   }
 
   return report;
