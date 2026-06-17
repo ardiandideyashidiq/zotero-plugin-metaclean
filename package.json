@@ -12,13 +12,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/user/zotero-meta-clean.git"
+    "url": "git+https://github.com/ardiandideyashidiq/zotero-plugin-metaclean.git"
   },
-  "author": "Zotero MetaClean",
+  "author": "ardiandideyashidiq",
   "bugs": {
-    "url": "https://github.com/user/zotero-meta-clean/issues"
+    "url": "https://github.com/ardiandideyashidiq/zotero-plugin-metaclean/issues"
   },
-  "homepage": "https://github.com/user/zotero-meta-clean",
+  "homepage": "https://github.com/ardiandideyashidiq/zotero-plugin-metaclean",
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "start": "zotero-plugin serve",
