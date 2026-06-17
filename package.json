@@ -1,7 +1,7 @@
 {
   "name": "zotero-meta-clean",
   "type": "module",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Normalize and clean metadata (titles, journals, publishers, creators) in Zotero",
   "config": {
     "addonName": "Zotero MetaClean",
