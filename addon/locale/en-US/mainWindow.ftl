@@ -1,11 +1,41 @@
-item-section-example1-head-text =
-    .label = Plugin Template: Item Info
-item-section-example1-sidenav-tooltip =
-    .tooltiptext = This is Plugin Template section (item info)
-item-section-example2-head-text =
-    .label = Plugin Template: Reader [{$status}]
-item-section-example2-sidenav-tooltip =
-    .tooltiptext = This is Plugin Template section (reader)
-item-section-example2-button-tooltip =
-    .tooltiptext = Unregister this section
-item-info-row-example-label = Example Row
+item-info-row-normalized-label =
+    .label = Normalized
+
+menu-parent =
+    .label = Normalize Metadata
+
+menuitem-smart =
+    .label = Normalize Metadata: Smart Defaults
+
+menuitem-sentence =
+    .label = Normalize Metadata: Sentence Case
+
+menuitem-title =
+    .label = Normalize Metadata: Title Case
+
+menuitem-lower =
+    .label = Normalize Metadata: lowercase
+
+menuitem-upper =
+    .label = Normalize Metadata: UPPERCASE
+
+menuitem-preview =
+    .label = Preview Metadata Normalization
+
+menuitem-selected =
+    .label = Normalize Selected Items
+
+menuitem-collection =
+    .label = Normalize Current Collection
+
+menuitem-library =
+    .label = Normalize Entire Library
+
+menuitem-undo =
+    .label = Undo Last Normalization
+
+menuitem-export-log =
+    .label = Export Normalization Log
+
+menuitem-settings =
+    .label = MetaClean Settings

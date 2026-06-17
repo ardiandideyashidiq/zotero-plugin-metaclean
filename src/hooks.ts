@@ -1,12 +1,6 @@
-import {
-  BasicExampleFactory,
-  HelperExampleFactory,
-  KeyExampleFactory,
-  PromptExampleFactory,
-  UIExampleFactory,
-} from "./modules/examples";
-import { getString, initLocale } from "./utils/locale";
-import { registerPrefsScripts } from "./modules/preferenceScript";
+import { UIFactory } from "./modules/menus";
+import { initLocale } from "./utils/locale";
+import { registerPrefsScripts } from "./modules/prefsUI";
 import { createZToolkit } from "./utils/ztoolkit";
 
 async function onStartup() {
@@ -18,28 +12,21 @@ async function onStartup() {
 
   initLocale();
 
-  BasicExampleFactory.registerPrefs();
+  // Register preference pane
+  UIFactory.registerPrefs();
 
-  BasicExampleFactory.registerNotifier();
+  // Register notifier for auto-processing
+  UIFactory.registerNotifier();
 
-  KeyExampleFactory.registerShortcuts();
+  // Register quick-search commands
+  UIFactory.registerCommands();
 
-  await UIExampleFactory.registerExtraColumn();
-
-  await UIExampleFactory.registerExtraColumnWithCustomCell();
-
-  UIExampleFactory.registerItemPaneCustomInfoRow();
-
-  UIExampleFactory.registerItemPaneSection();
-
-  UIExampleFactory.registerReaderItemPaneSection();
-
+  // Load existing windows
   await Promise.all(
     Zotero.getMainWindows().map((win) => onMainWindowLoad(win)),
   );
 
-  // Mark initialized as true to confirm plugin loading status
-  // outside of the plugin (e.g. scaffold testing process)
+  // Mark initialized
   addon.data.initialized = true;
 }
 
@@ -51,90 +38,42 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
     `${addon.data.config.addonRef}-mainWindow.ftl`,
   );
 
-  const popupWin = new ztoolkit.ProgressWindow(addon.data.config.addonName, {
-    closeOnClick: true,
-    closeTime: -1,
-  })
-    .createLine({
-      text: getString("startup-begin"),
-      type: "default",
-      progress: 0,
-    })
-    .show();
+  // Register stylesheet
+  UIFactory.registerStyleSheet(win);
 
-  await Zotero.Promise.delay(1000);
-  popupWin.changeLine({
-    progress: 30,
-    text: `[30%] ${getString("startup-begin")}`,
-  });
+  // Register right-click menus
+  UIFactory.registerRightClickMenus();
 
-  UIExampleFactory.registerStyleSheet(win);
-
-  UIExampleFactory.registerRightClickMenuItem();
-
-  UIExampleFactory.registerRightClickMenuPopup(win);
-
-  UIExampleFactory.registerWindowMenuWithSeparator();
-
-  PromptExampleFactory.registerNormalCommandExample();
-
-  PromptExampleFactory.registerAnonymousCommandExample(win);
-
-  PromptExampleFactory.registerConditionalCommandExample();
-
-  await Zotero.Promise.delay(1000);
-
-  popupWin.changeLine({
-    progress: 100,
-    text: `[100%] ${getString("startup-finish")}`,
-  });
-  popupWin.startCloseTimer(5000);
-
-  addon.hooks.onDialogEvents("dialogExample");
+  // Register Tools menu entries
+  UIFactory.registerWindowMenus();
 }
 
 async function onMainWindowUnload(win: Window): Promise<void> {
   ztoolkit.unregisterAll();
-  addon.data.dialog?.window?.close();
 }
 
 function onShutdown(): void {
   ztoolkit.unregisterAll();
-  addon.data.dialog?.window?.close();
-  // Remove addon object
   addon.data.alive = false;
   // @ts-expect-error - Plugin instance is not typed
   delete Zotero[addon.data.config.addonInstance];
 }
 
 /**
- * This function is just an example of dispatcher for Notify events.
- * Any operations should be placed in a function to keep this funcion clear.
+ * Dispatch notifier events.
  */
 async function onNotify(
   event: string,
   type: string,
   ids: Array<string | number>,
-  extraData: { [key: string]: any },
+  _extraData: { [key: string]: any },
 ) {
-  // You can add your code to the corresponding notify type
-  ztoolkit.log("notify", event, type, ids, extraData);
-  if (
-    event == "select" &&
-    type == "tab" &&
-    extraData[ids[0]].type == "reader"
-  ) {
-    BasicExampleFactory.exampleNotifierCallback();
-  } else {
-    return;
-  }
+  // Notifier is handled by the module; this hook is for additional dispatch if needed
+  ztoolkit.log("notify", event, type, ids);
 }
 
 /**
- * This function is just an example of dispatcher for Preference UI events.
- * Any operations should be placed in a function to keep this funcion clear.
- * @param type event type
- * @param data event data
+ * Dispatch preference pane events.
  */
 async function onPrefsEvent(type: string, data: { [key: string]: any }) {
   switch (type) {
@@ -147,43 +86,14 @@ async function onPrefsEvent(type: string, data: { [key: string]: any }) {
 }
 
 function onShortcuts(type: string) {
-  switch (type) {
-    case "larger":
-      KeyExampleFactory.exampleShortcutLargerCallback();
-      break;
-    case "smaller":
-      KeyExampleFactory.exampleShortcutSmallerCallback();
-      break;
-    default:
-      break;
-  }
+  // Reserved for future keyboard shortcuts
+  ztoolkit.log("shortcut", type);
 }
 
 function onDialogEvents(type: string) {
-  switch (type) {
-    case "dialogExample":
-      HelperExampleFactory.dialogExample();
-      break;
-    case "clipboardExample":
-      HelperExampleFactory.clipboardExample();
-      break;
-    case "filePickerExample":
-      HelperExampleFactory.filePickerExample();
-      break;
-    case "progressWindowExample":
-      HelperExampleFactory.progressWindowExample();
-      break;
-    case "vtableExample":
-      HelperExampleFactory.vtableExample();
-      break;
-    default:
-      break;
-  }
+  // Reserved for future dialog events
+  ztoolkit.log("dialog", type);
 }
-
-// Add your hooks here. For element click, etc.
-// Keep in mind hooks only do dispatch. Don't add code that does real jobs in hooks.
-// Otherwise the code would be hard to read and maintain.
 
 export default {
   onStartup,

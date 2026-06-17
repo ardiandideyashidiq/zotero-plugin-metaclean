@@ -7,8 +7,22 @@
 declare namespace _ZoteroTypes {
   interface Prefs {
     PluginPrefsMap: {
-      "enable": boolean;
-      "input": string;
+      "enabled": boolean;
+      "autoProcessNewItems": boolean;
+      "defaultTitleMode": string;
+      "defaultPublicationMode": string;
+      "defaultPublisherMode": string;
+      "defaultCreatorMode": string;
+      "processTitles": boolean;
+      "processPublications": boolean;
+      "processPublishers": boolean;
+      "processPlaces": boolean;
+      "processCreators": boolean;
+      "processIdentifiers": boolean;
+      "previewBeforeApply": boolean;
+      "addTagAfterProcessing": string;
+      "skipTag": string;
+      "exceptionWords": string;
     };
   }
 }

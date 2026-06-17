@@ -1,3 +1,14 @@
-.makeItRed {
-  background-color: tomato;
+/* Preview dialog highlight */
+.case-normalizer-preview-changed {
+  background-color: #e8f5e9;
+}
+
+.case-normalizer-preview-new {
+  color: #2e7d32;
+  font-weight: bold;
+}
+
+.case-normalizer-preview-old {
+  color: #c62828;
+  text-decoration: line-through;
 }
